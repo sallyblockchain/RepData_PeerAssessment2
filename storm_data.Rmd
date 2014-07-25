@@ -1,4 +1,75 @@
-# Reproducible Research: Peer Assessment 2
+Reproducible Research: Peer Assessment 2
 ==========================================
 Created by Xiaodan Zhang on July 25, 2014
 
+## Impact of Severe Weather Events on Public Health and Economy in the United States
+
+### Synonpsis  
+In this report, we aim to analyze the impact of different weather events on public health and economy based on the storm database collected from the U.S. National Oceanic and Atmospheric Administration's (NOAA) from 1950 - 2011. We will use the estimates of fatalities, injuries, property and crop damage to decide which type of event is most harmful to the population health. From these data, we found that tornado causes the largest number of fatalities and injuries, while flooding, hurricanes and drought play important roles in being harmful to the economy.
+
+### Basic settings
+```{r}
+echo = TRUE  # Always make code visible
+options(scipen = 1)  # Turn off scientific notations for numbers
+library(R.utils)
+library(ggplot2)
+library(plyr)
+```
+
+### Data Processing
+First, we download the data file and unzip it.
+```{r}
+setwd("~/Desktop/Online Coursera/Coursera-Reproducible-Research/RepData_PeerAssessment2/")
+
+if (!"stormData.csv.bz2" %in% dir("./data/")) {
+    print("hhhh")
+    download.file("http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2", destfile = "data/stormData.csv.bz2")
+    bunzip2("data/stormData.csv.bz2", overwrite=T, remove=F)
+}
+
+```
+Then, we read the generated csv file. If the data already exists in the working environment, we do not need to load it again. Otherwise, we read the csv file.
+```{r}
+if (!"stormData" %in% ls()) {
+    stormData <- read.csv("data/stormData.csv", sep = ",")
+}
+dim(stormData)
+head(stormData, n = 2)
+```
+There are 902297 rows and 37 columns in total.
+The events in the database start in the year 1950 and end in November 2011. In the earlier years of the database there are generally fewer events recorded, most likely due to a lack of good records. More recent years should be considered more complete.
+
+```{r}
+if (dim(stormData)[2] == 37) {
+    stormData$year <- as.numeric(format(as.Date(stormData$BGN_DATE, format = "%m/%d/%Y %H:%M:%S"), "%Y"))
+}
+hist(stormData$year, breaks = 30)
+```  
+
+Based on the above histogram, we see that the number of events tracked starts to significantly increase around 1994. So, we use the subset of the data from 1990 to 2011 to get most out of good records.
+```{r}
+storm <- stormData[stormData$year >= 1994, ]
+dim(storm)
+```
+Now, there are 702131 rows and 38 columns in total.
+
+#### Impact on Public Health
+In this section, we check the number of **fatalities** and **injuries** that are caused by the severe weather events. We would like to get the first 30 most severe types of weather events.
+```{r}
+sortHelper <- function(fieldName, top = 30, dataset = stormData) {
+    index <- which(colnames(dataset) == fieldName)
+    field <- aggregate(dataset[, index], by = list(dataset$EVTYPE), FUN = "sum")
+    names(field) <- c("EVTYPE", fieldName)
+    field <- arrange(field, field[, 2], decreasing = T)
+    field <- head(field, n = top)
+    field <- within(field, EVTYPE <- factor(x = EVTYPE, levels = field$EVTYPE))
+    return(field)
+}
+
+fatalities <- sortHelper("FATALITIES", dataset = storm)
+injuries <- sortHelper("INJURIES", dataset = storm)
+```
+
+#### Impact on Economy
+
+### Results
